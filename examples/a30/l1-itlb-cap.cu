@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define CHUNK0_SIZE (64L * 1024L * 1024L * 1024L * 1024L + 0x55554000000L)
 #define CHUNK1_SIZE (41L * 1024L * 1024L * 1024L * 1024L + 0x0ffc8000000L)
@@ -10,10 +11,13 @@
 
 #define BASE_ADDR   0x700000000000
 #define DUMMY_ADDR  0x7F0000000000
+// #define BASE_ADDR  0x100000000000
+// #define DUMMY_ADDR 0x200000000000
+// #define DUMMY_ADDR 0x555552000000
 
-#define PAGE0_NUM   48
-#define PAGE1_NUM   12000
-#define WAIT_TIME   1000000000L // about 0.5 seconds on RTX3080
+#define PAGE0_NUM   16
+#define PAGE1_NUM   8000
+#define WAIT_TIME   2000000000L // about 0.5 seconds on RTX3080
 
 #define BLK_NUM     100
 #define SHARED_MEM  (96 * 1024)
@@ -94,14 +98,12 @@ loop(uint64_t *head, uint64_t *tail, volatile uint64_t *page1, uint64_t addr, ui
     }
     
     // use INST8K to evict L1 instruction cache!!!
-    // while (1) {
-      asm volatile(
+    asm volatile(
         INST8K
         "l0:"
         "bra l1;"
         "l1:"
-      );
-    // }
+    );
 
      clk0 = clock64();
      clk1 = 0;
@@ -171,10 +173,12 @@ main(int argc, char *argv[])
   for (int i = 0; i < PAGE1_NUM; ++i)
     put<<<1, 1>>>(list1[i], (uint64_t)list1[(i + 1) % PAGE1_NUM], 0xdeadbeef);
   put<<<1, 1>>>(dummy, 0, 0);
-  cudaDeviceSynchronize();  
-  
+  cudaDeviceSynchronize();
+  printf("Dummy page: 0x%lx, 0x%lx\n", (uint64_t)dummy, *(uint64_t *)list0[2]);
+
+  printf("Done with hoarding\n");
   addr = strtoull(argv[1], NULL, 16);
-  
+
   loop<<<BLK_NUM, 1, SHARED_MEM>>>(list0[0], list0[PAGE0_NUM - 1], list1[0], addr, 0xdeadbeef);
   cudaDeviceSynchronize();
   

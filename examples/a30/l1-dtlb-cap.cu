@@ -8,9 +8,12 @@
 
 #define BASE_ADDR   0x700000000000
 #define DUMMY_ADDR  0x7F0000000000
+// #define BASE_ADDR 0x100000000000
+// #define DUMMY_ADDR 0x555552000000
+
 
 #define PAGE0_NUM   17
-#define PAGE1_NUM   12000
+#define PAGE1_NUM   8000
 #define WAIT_TIME   10000000000L // about 5 seconds on RTX3080
 
 #define BLK_NUM     100
