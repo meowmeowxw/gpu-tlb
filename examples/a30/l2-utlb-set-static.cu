@@ -11,9 +11,9 @@
 #define DUMMY_ADDR  0x7F0000000000
 
 #define PAGE0_NUM   4000
-#define PAGE1_NUM   8000
+#define PAGE1_NUM   4000
 #define PAGE2_NUM   16
-#define WAIT_TIME   10000000000L // about 5 seconds on RTX3080
+#define WAIT_TIME   5000000000L // about 5 seconds on RTX3080
 
 #define BLK_NUM     100
 #define SHARED_MEM  (96 * 1024)
@@ -38,13 +38,12 @@ loop(volatile uint64_t *page0, volatile uint64_t *page1, volatile uint64_t *page
     while (y == x) {
       // printf("l2: accessing %p, page0[0]: %p\n", page0, page0[0]);
       for (ptr = (uint64_t *)page0[0]; ptr != page0; ptr = (uint64_t *)ptr[0]) {
-        // access L1-dTLB eviction set
         // printf("l2: accessing %p\n", ptr);
-        for (evt = (uint64_t *)page2[0]; evt != page2; evt = (uint64_t *)evt[0]) {
-          // printf("l1: accessing %p\n", evt);
-          ++evt[2];
-        }
         ++ptr[2];
+      }
+      for (evt = (uint64_t *)page2[0]; evt != page2; evt = (uint64_t *)evt[0]) {
+        // printf("l1: accessing %p\n", evt);
+        ++evt[2];
       }
 
       clk0 = clock64();
@@ -56,10 +55,10 @@ loop(volatile uint64_t *page0, volatile uint64_t *page1, volatile uint64_t *page
       printf("y: %lx\n", y);
     }
   } else if (smid == SMID1) {
+    // while (1) { ; }
     while (y == x) {
       for (ptr = (uint64_t *)page1[0]; ptr != page1; ptr = (uint64_t *)ptr[0])
         ++ptr[2];
-
       y = ptr[1];
     }
   } 
@@ -84,7 +83,7 @@ main(int argc, char *argv[])
   uint64_t *list0[PAGE0_NUM];
   uint64_t *list1[PAGE1_NUM];
   uint64_t *list2[PAGE2_NUM];
-  uint64_t indexes[] = {0xb7, 0x1b6, 0x2b5, 0x3b4, 0x4b3, 0x5b2, 0x6b1, 0x7b0, 0x8bf};
+  // uint64_t indexes[] = {0xb7, 0x1b6, 0x2b5, 0x3b4, 0x4b3, 0x5b2, 0x6b1, 0x7b0, 0x8bf};
   // uint64_t indexes[] = {0xb7, 0x1b9, 0x2b5, 0x3b4, 0x4b3, 0x5b2, 0x6b1, 0x7b0, 0x8bf};
 
   int aim = -1;
@@ -103,7 +102,7 @@ main(int argc, char *argv[])
   base += PAGE0_NUM * STRIDE_SIZE;
   for (int i = 0; i < PAGE1_NUM; ++i)
     list1[i] = (uint64_t *)(base + i * STRIDE_SIZE);
-  aim = 0xb7;
+  aim = atoi(argv[1]);
   for (int i = 0; i < PAGE2_NUM; ++i)
     list2[i] = list0[aim + i + 1];
   dummy = (uint64_t *)DUMMY_ADDR;
@@ -112,9 +111,17 @@ main(int argc, char *argv[])
   put<<<1, 1>>>(dummy, 0, 0);
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-  for (int i = 0; i < 9; i++) {
-    put<<<1, 1>>>(list0[indexes[i]], (uint64_t)list0[indexes[(i + 1) % 9]], 0xdeadbeef);
+  for (int i = 1; i < argc; ++i) {
+    int j = (i + 1) % argc == 0 ? 1 : i + 1;
+    int m = atoi(argv[i]);
+    int n = atoi(argv[j]);
+    put<<<1, 1>>>(list0[m], (uint64_t)list0[n], 0xdeadbeef);
+    // printf("m: 0x%lx, n: 0x%lx\n", list0[m], list0[n]);
   }
+
+  // for (int i = 0; i < 9; i++) {
+  //   put<<<1, 1>>>(list0[indexes[i]], (uint64_t)list0[indexes[(i + 1) % 9]], 0xdeadbeef);
+  // }
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   for (int i = 0; i < PAGE1_NUM; ++i)
     put<<<1, 1>>>(list1[i], (uint64_t)list1[(i + 1) % PAGE1_NUM], 0xdeadbeef);
@@ -123,7 +130,7 @@ main(int argc, char *argv[])
   cudaDeviceSynchronize();
 
   printf("Done hoarding\n");
-  loop<<<BLK_NUM, 1, SHARED_MEM>>>(list0[indexes[0]], list1[0], list2[0], 0xdeadbeef);
+  loop<<<BLK_NUM, 1, SHARED_MEM>>>(list0[aim], list1[0], list2[0], 0xdeadbeef);
   cudaDeviceSynchronize();
   
   cudaFree(chunk0);

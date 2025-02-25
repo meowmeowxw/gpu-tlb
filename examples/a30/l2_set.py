@@ -23,18 +23,27 @@ def get_virtual_address(address):
     return int("".join(map(str, cache_set)), 2)
 
 
-def get_eviction_set_naive(cache_set, base_address=0x700000000000):
+def get_eviction_set(cache_set, base_address=0x700000000000, indexed=True):
+    start_addr = base_address
     addresses = []
     while len(addresses) < 9:
-        base_address += 0x100000
-        if get_virtual_address(base_address) == cache_set:
-            addresses.append(base_address)
+        start_addr += 0x100000
+        if get_virtual_address(start_addr) == cache_set:
+            addresses.append(start_addr)
+    if indexed:
+        results = []
+        for addr in addresses:
+            results.append((base_address ^ addr) >> 20)
+        return results
     return addresses
 
 
-eviction_set = get_eviction_set_naive(13)
-for addr in eviction_set:
-    print(hex(addr), hex((addr >> 20) ^ 0x7000000))
+if __name__ == "__main__":
+    eviction_set = get_eviction_set(13, indexed=True)
+    for index in eviction_set:
+        print(hex(index))
+    # for addr in eviction_set:
+    #     print(hex(addr), hex((addr >> 20) ^ 0x7000000))
 
 
 
