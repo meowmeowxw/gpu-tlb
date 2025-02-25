@@ -6,6 +6,7 @@
 #define CHUNK1_SIZE (41L * 1024L * 1024L * 1024L * 1024L + 0x0ffc8000000L)
 #define STRIDE_SIZE (1L * 1024L * 1024L)
 
+// #define BASE_ADDR   0x700000000000
 #define BASE_ADDR   0x700000000000
 #define DUMMY_ADDR  0x7F0000000000
 // #define BASE_ADDR 0x100000000000
@@ -13,16 +14,18 @@
 
 
 #define PAGE0_NUM   17
-#define PAGE1_NUM   8000
-#define WAIT_TIME   10000000000L // about 5 seconds on RTX3080
+#define PAGE1_NUM   6000
+#define WAIT_TIME   8000000000L // about 5 seconds on RTX3080
 
 #define BLK_NUM     100
 #define SHARED_MEM  (96 * 1024)
 #define SMID0       0
-#define SMID1       1 // IMPORTANT: SM0 and SM12 are in the same GPC on RTX3080
+// #define SMID1       14 // IMPORTANT: SM0 and SM12 are in the same GPC on RTX3080
+
+uint32_t SMID1 = 1;
 
 __global__ void 
-loop(volatile uint64_t *page0, volatile uint64_t *page1, uint64_t x)
+loop(volatile uint64_t *page0, volatile uint64_t *page1, uint64_t x, uint64_t SMID1)
 {
   uint64_t y = x;
   volatile uint64_t *ptr = NULL;
@@ -46,9 +49,10 @@ loop(volatile uint64_t *page0, volatile uint64_t *page1, uint64_t x)
         clk1 = clock64() - clk0;
       
       y = ptr[1];
-      printf("y: %lx\n", y);
+      printf("y: %lx, ptr: 0x%lx\n", y, ptr);
     }
   } else if (smid == SMID1) {
+    printf("smid: %d\n", smid);
     while (y == x) {
       for (ptr = (uint64_t *)page1[0]; ptr != page1; ptr = (uint64_t *)ptr[0])
         ++ptr[2];
@@ -84,7 +88,9 @@ main(int argc, char *argv[])
   // hoard a large address space
   cudaMallocManaged(&chunk0, CHUNK0_SIZE);
   cudaMallocManaged(&chunk1, CHUNK1_SIZE);
-  
+
+  SMID1 = atoi(argv[1]);
+
   base = (uint8_t *)BASE_ADDR;
   for (int i = 0; i < PAGE0_NUM; ++i)
     list0[i] = (uint64_t *)(base + i * STRIDE_SIZE);
@@ -99,8 +105,9 @@ main(int argc, char *argv[])
     put<<<1, 1>>>(list1[i], (uint64_t)list1[(i + 1) % PAGE1_NUM], 0xdeadbeef);
   put<<<1, 1>>>(dummy, 0, 0);
   cudaDeviceSynchronize();
-  
-  loop<<<BLK_NUM, 1, SHARED_MEM>>>(list0[0], list1[0], 0xdeadbeef);
+
+  printf("Done hoarding, PAGE0_NUM: %d, PAGE1_NUM: %d\n", PAGE0_NUM, PAGE1_NUM);
+  loop<<<BLK_NUM, 1, SHARED_MEM>>>(list0[0], list1[0], 0xdeadbeef, SMID1);
   cudaDeviceSynchronize();
   
   cudaFree(chunk0);

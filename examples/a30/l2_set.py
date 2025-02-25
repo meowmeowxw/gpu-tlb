@@ -23,10 +23,10 @@ def get_virtual_address(address):
     return int("".join(map(str, cache_set)), 2)
 
 
-def get_eviction_set(cache_set, base_address=0x700000000000, indexed=True):
+def get_eviction_set(cache_set, base_address=0x700000000000, indexed=True, n=9):
     start_addr = base_address
     addresses = []
-    while len(addresses) < 9:
+    while len(addresses) < n:
         start_addr += 0x100000
         if get_virtual_address(start_addr) == cache_set:
             addresses.append(start_addr)

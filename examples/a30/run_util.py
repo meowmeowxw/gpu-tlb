@@ -39,5 +39,21 @@ def prepare(argv, sleep_time=2, dump_size="0x10000000"):
     a_out.kill()
     time.sleep(5)
 
+def launch_eviction(cmd, pte_pa, pte_val, sleep_time=8):
+    a_out = subprocess.Popen(cmd)
+    b_out = subprocess.Popen(["nvidia-smi", "-f", "/dev/null"])
+    b_out.wait() # in case the driver warms up very slowly
+    time.sleep(1)
+    subprocess.Popen(["sudo", modifier_path, hex(pte_pa), hex(pte_val)])
+    print("[*] modification done")
+    for i in range(sleep_time):
+        time.sleep(1)
+        if a_out.poll() != None:
+            print("eviction successful")
+            return True
+    else:
+        print("no eviction")
+        a_out.kill()
+        return False
 
 

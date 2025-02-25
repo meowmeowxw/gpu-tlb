@@ -10,9 +10,9 @@
 #define BASE_ADDR   0x700000000000
 #define DUMMY_ADDR  0x7F0000000000
 
-#define PAGE_NUM    8000
+#define PAGE_NUM    6000
 //#define PAGE_NUM    2000
-#define WAIT_TIME   10000000000L // about 5 seconds on RTX3080
+#define WAIT_TIME   5000000000L // about 5 seconds on RTX3080
 
 __global__ void 
 loop(volatile uint64_t *page, uint64_t x)
@@ -32,6 +32,7 @@ loop(volatile uint64_t *page, uint64_t x)
       clk1 = clock64() - clk0;
     
     y = ptr[1];
+    printf("y: 0x%lx\n", y);
   }
 }
 

@@ -10,15 +10,15 @@
 #define BASE_ADDR   0x700000000000
 #define DUMMY_ADDR  0x7F0000000000
 
-#define PAGE0_NUM   4000
-#define PAGE1_NUM   4000
+#define PAGE0_NUM   5000
+#define PAGE1_NUM   3000
 #define PAGE2_NUM   16
 #define WAIT_TIME   5000000000L // about 5 seconds on RTX3080
 
 #define BLK_NUM     100
 #define SHARED_MEM  (96 * 1024)
 #define SMID0       0
-#define SMID1       3 // IMPORTANT: SM0 and SM3 are in different GPCs on RTX3080
+#define SMID1       5 // IMPORTANT: SM0 and SM3 are in different GPCs on RTX3080
 
 __global__ void 
 loop(volatile uint64_t *page0, volatile uint64_t *page1, volatile uint64_t *page2, uint64_t x)
@@ -57,6 +57,14 @@ loop(volatile uint64_t *page0, volatile uint64_t *page1, volatile uint64_t *page
   } else if (smid == SMID1) {
     // while (1) { ; }
     while (y == x) {
+      // for (ptr = (uint64_t *)page1[0]; ptr != page1; ptr = (uint64_t *)ptr[0]) {
+      //   // printf("l2: accessing %p\n", ptr);
+      //   ++ptr[2];
+      //   for (evt = (uint64_t *)page2[0]; evt != page2; evt = (uint64_t *)evt[0]) {
+      //     // printf("l1: accessing %p\n", evt);
+      //     ++evt[2];
+      //   }
+      // }
       for (ptr = (uint64_t *)page1[0]; ptr != page1; ptr = (uint64_t *)ptr[0])
         ++ptr[2];
       y = ptr[1];
@@ -119,12 +127,16 @@ main(int argc, char *argv[])
     // printf("m: 0x%lx, n: 0x%lx\n", list0[m], list0[n]);
   }
 
-  // for (int i = 0; i < 9; i++) {
-  //   put<<<1, 1>>>(list0[indexes[i]], (uint64_t)list0[indexes[(i + 1) % 9]], 0xdeadbeef);
-  // }
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   for (int i = 0; i < PAGE1_NUM; ++i)
     put<<<1, 1>>>(list1[i], (uint64_t)list1[(i + 1) % PAGE1_NUM], 0xdeadbeef);
+  // for (int i = 1; i < argc; ++i) {
+  //   int j = (i + 1) % argc == 0 ? 1 : i + 1;
+  //   int m = atoi(argv[i]);
+  //   int n = atoi(argv[j]);
+  //   put<<<1, 1>>>(list1[m], (uint64_t)list1[n], 0xdeadbeef);
+  //   // printf("m: 0x%lx, n: 0x%lx\n", list1[m], list1[n]);
+  // }
   for (int i = 0; i < PAGE2_NUM; ++i)
     put<<<1, 1>>>(list2[i], (uint64_t)list2[(i + 1) % PAGE2_NUM], 0xdeadbeef);
   cudaDeviceSynchronize();

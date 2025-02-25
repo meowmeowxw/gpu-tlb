@@ -20,18 +20,6 @@ print(f"pte_pa: {hex(pte_pa)}")
 print(f"pte_val: {hex(pte_val)}")
 
 # do experiments
-a_out = subprocess.Popen(['./fill'])
-b_out = subprocess.Popen(['nvidia-smi', '-f', '/dev/null'])
-b_out.wait() # in case the driver warms up very slowly
-time.sleep(2)
-subprocess.Popen(['sudo', modifier_path, hex(pte_pa), hex(pte_val)])
-
-time.sleep(10)
-
-a_out.kill()
-if a_out.poll() != None:
-  print('eviction successful')
-else:
-  print('no eviction')
+launch_eviction(["./fill"], pte_pa, pte_val)
 
 
