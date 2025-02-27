@@ -37,7 +37,7 @@ def prepare(argv, sleep_time=2, dump_size="0x10000000"):
     extract.wait()
     pagemap_file.close()
     a_out.kill()
-    time.sleep(5)
+    time.sleep(2)
 
 def launch_eviction(cmd, pte_pa, pte_val, sleep_time=8):
     a_out = subprocess.Popen(cmd)

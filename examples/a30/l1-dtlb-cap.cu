@@ -19,13 +19,13 @@
 
 #define BLK_NUM     100
 #define SHARED_MEM  (96 * 1024)
-#define SMID0       0
+// #define SMID0       0
 // #define SMID1       14 // IMPORTANT: SM0 and SM12 are in the same GPC on RTX3080
 
-uint32_t SMID1 = 1;
+uint32_t SMID0 = 0, SMID1 = 1;
 
 __global__ void 
-loop(volatile uint64_t *page0, volatile uint64_t *page1, uint64_t x, uint64_t SMID1)
+loop(volatile uint64_t *page0, volatile uint64_t *page1, uint64_t x, uint32_t SMID0, uint32_t SMID1)
 {
   uint64_t y = x;
   volatile uint64_t *ptr = NULL;
@@ -39,6 +39,7 @@ loop(volatile uint64_t *page0, volatile uint64_t *page1, uint64_t x, uint64_t SM
   // if (smid != SMID0)
 
   if (smid == SMID0) {
+    printf("smid0: %d\n", smid);
     while (y == x) {
       for (ptr = (uint64_t *)page0[0]; ptr != page0; ptr = (uint64_t *)ptr[0])
         ++ptr[2];
@@ -52,7 +53,7 @@ loop(volatile uint64_t *page0, volatile uint64_t *page1, uint64_t x, uint64_t SM
       printf("y: %lx, ptr: 0x%lx\n", y, ptr);
     }
   } else if (smid == SMID1) {
-    printf("smid: %d\n", smid);
+    printf("smid1: %d\n", smid);
     while (y == x) {
       for (ptr = (uint64_t *)page1[0]; ptr != page1; ptr = (uint64_t *)ptr[0])
         ++ptr[2];
@@ -89,7 +90,8 @@ main(int argc, char *argv[])
   cudaMallocManaged(&chunk0, CHUNK0_SIZE);
   cudaMallocManaged(&chunk1, CHUNK1_SIZE);
 
-  SMID1 = atoi(argv[1]);
+  SMID0 = atoi(argv[1]);
+  SMID1 = atoi(argv[2]);
 
   base = (uint8_t *)BASE_ADDR;
   for (int i = 0; i < PAGE0_NUM; ++i)
@@ -107,7 +109,7 @@ main(int argc, char *argv[])
   cudaDeviceSynchronize();
 
   printf("Done hoarding, PAGE0_NUM: %d, PAGE1_NUM: %d\n", PAGE0_NUM, PAGE1_NUM);
-  loop<<<BLK_NUM, 1, SHARED_MEM>>>(list0[0], list1[0], 0xdeadbeef, SMID1);
+  loop<<<BLK_NUM, 1, SHARED_MEM>>>(list0[0], list1[0], 0xdeadbeef, SMID0, SMID1);
   cudaDeviceSynchronize();
   
   cudaFree(chunk0);
