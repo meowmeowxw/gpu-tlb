@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 
-import subprocess
-import time
 import pagemap
-import random
-from run_util import *
-from l2_set import get_eviction_set
+import sys
 
-eviction_set = get_eviction_set(18, n=18, indexed=True)
+from run_util import *
+from eviction_sets import get_eviction_set
+
+if len(sys.argv) > 1:
+    num_entries = int(sys.argv[1])
+else:
+    num_entries = 18
+
+eviction_set = get_eviction_set(18, n=num_entries, indexed=True)
 target = eviction_set[0]
 # eviction_set[2] += 10
 eviction_set = list(map(str, eviction_set))

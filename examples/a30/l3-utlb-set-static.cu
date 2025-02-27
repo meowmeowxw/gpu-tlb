@@ -31,6 +31,7 @@ loop(volatile uint64_t *page0, volatile uint64_t *page1, volatile uint64_t *page
   uint32_t smid;
   
   asm("mov.u32 %0, %%smid;" : "=r" (smid));
+  // Perform only self eviction
   if (smid != SMID0)
     return;
 

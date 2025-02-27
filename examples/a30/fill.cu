@@ -11,10 +11,9 @@
 #define DUMMY_ADDR  0x7F0000000000
 
 #define PAGE_NUM    6000
-//#define PAGE_NUM    2000
 #define WAIT_TIME   5000000000L // about 5 seconds on RTX3080
 
-__global__ void 
+__global__ void
 loop(volatile uint64_t *page, uint64_t x)
 {
   uint64_t y = x;
@@ -53,7 +52,7 @@ main(int argc, char *argv[])
   uint64_t *dummy = NULL;
   
   cudaDeviceReset();
-  
+
   // hoard a large address space
   cudaMallocManaged(&chunk0, CHUNK0_SIZE);
   cudaMallocManaged(&chunk1, CHUNK1_SIZE);

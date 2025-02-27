@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import itertools as iter
-
 xored = [
     [44, 36, 28, 20],
     [45, 37, 29, 21],
