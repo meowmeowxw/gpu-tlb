@@ -11,6 +11,8 @@ xored = [
     [43, 35, 27],
 ]
 
+slice_xor = [i for i in range(25, 47)]
+
 def get_virtual_address(address):
     cache_set = [0 for _ in range(len(xored))]
     for i, values in enumerate(xored):
@@ -34,6 +36,24 @@ def get_eviction_set(cache_set, base_address=0x700000000000, indexed=True, n=9):
             results.append((base_address ^ addr) >> 20)
         return results
     return addresses
+
+
+def get_slice_address(addr):
+    slice = 0
+    for sx in slice_xor:
+        slice = slice ^ ((addr >> (sx)) & 1)
+    return slice
+
+def get_slice(eviction_set):
+    new_eviction_set = []
+    for addr in eviction_set:
+        slice = 0
+        for sx in slice_xor:
+            slice = slice ^ ((addr >> (sx)) & 1)
+        if slice == 1:
+            new_eviction_set.append(addr)
+    return new_eviction_set
+
 
 
 if __name__ == "__main__":
