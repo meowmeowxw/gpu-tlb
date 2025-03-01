@@ -13,6 +13,14 @@ xored = [
 
 slice_xor = [i for i in range(25, 47)]
 
+def write_to_file(eviction_set, filename, base_address=0x700000000000):
+    with open(filename, "w") as f:
+        f.write(hex(base_address) + "\n")
+        f.write(str(len(eviction_set)) + "\n")
+        for addr in eviction_set:
+            f.write(str(addr) + "\n")
+
+
 def get_virtual_address(address):
     cache_set = [0 for _ in range(len(xored))]
     for i, values in enumerate(xored):
@@ -21,6 +29,13 @@ def get_virtual_address(address):
             cache_set[i] ^= ((address & mask) >> v)
 
     return int("".join(map(str, cache_set)), 2)
+
+def idx_to_addr(idx, base_address=0x700000000000):
+    return base_address ^ (idx << 20)
+
+
+def addr_to_idx(addr, base_address=0x700000000000):
+    return (addr ^ base_address) >> 20
 
 
 def get_eviction_set(cache_set, base_address=0x700000000000, indexed=True, n=9):
@@ -44,14 +59,17 @@ def get_slice_address(addr):
         slice = slice ^ ((addr >> (sx)) & 1)
     return slice
 
-def get_slice(eviction_set):
+def get_slice(eviction_set, id=1, indexed=False):
     new_eviction_set = []
     for addr in eviction_set:
         slice = 0
         for sx in slice_xor:
             slice = slice ^ ((addr >> (sx)) & 1)
-        if slice == 1:
-            new_eviction_set.append(addr)
+        if slice == id:
+            if indexed:
+                new_eviction_set.append(addr_to_idx(addr))
+            else:
+                new_eviction_set.append(addr)
     return new_eviction_set
 
 
