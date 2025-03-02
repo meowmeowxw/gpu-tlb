@@ -54,10 +54,25 @@ def get_eviction_set(cache_set, base_address=0x700000000000, indexed=True, n=9):
 
 
 def get_slice_address(addr):
-    slice = 0
+    slice_id = 0
     for sx in slice_xor:
-        slice = slice ^ ((addr >> (sx)) & 1)
-    return slice
+        slice_id = slice_id ^ ((addr >> (sx)) & 1)
+    return slice_id
+
+def get_slice_set(cache_set, base_address=0x700000000000, indexed=True, n=9, slice_id=0):
+    start_addr = base_address
+    addresses = []
+    while len(addresses) < n:
+        start_addr += 0x100000
+        if get_virtual_address(start_addr) == cache_set:
+            if get_slice_address(start_addr) == slice_id:
+                addresses.append(start_addr)
+    if indexed:
+        results = []
+        for addr in addresses:
+            results.append(addr_to_idx(addr, base_address=base_address))
+        return results
+    return addresses
 
 def get_slice(eviction_set, id=1, indexed=False):
     new_eviction_set = []
