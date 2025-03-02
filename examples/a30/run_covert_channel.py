@@ -20,11 +20,13 @@ base_addr_snd = 0x702000000000
 
 # eviction_set_rcv = get_slice(get_eviction_set(18, n=100, indexed=False, base_address=base_addr_rcv), indexed=True)[:num_entries_rcv]
 eviction_set_rcv = get_eviction_set(18, n=100, indexed=True, base_address=base_addr_rcv)[:num_entries_rcv]
-write_to_file(eviction_set_rcv, "./eviction_set_rcv.txt", base_address=base_addr_rcv)
+target = eviction_set_rcv[0]
+target_va = base_addr_rcv + target * (1 * 1024 * 1024)
+slice_id = get_slice_address(target_va)
+write_to_file(eviction_set_rcv, "./out/eviction_set_rcv.txt", base_address=base_addr_rcv)
 
-eviction_set_snd = get_eviction_set(18, n=100, indexed=True, base_address=base_addr_snd)[:num_entries_snd]
-# eviction_set_snd = get_slice(get_eviction_set(18, n=100, indexed=False, base_address=base_addr_snd), indexed=True)[:num_entries_snd]
-write_to_file(eviction_set_snd, "./eviction_set_snd.txt", base_address=base_addr_snd)
+eviction_set_snd = list(map(str, get_slice_set(18, n=num_entries_snd, indexed=True, base_address=base_addr_snd, slice_id=slice_id)))
+write_to_file(eviction_set_snd, "./out/eviction_set_snd.txt", base_address=base_addr_snd)
 
 #eviction_set_receiver = list(map(str, get_eviction_set(18, n=100, indexed=True, base_address=base_addr_receiver)[:10]))
 
