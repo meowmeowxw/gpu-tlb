@@ -92,7 +92,11 @@ def get_slice(eviction_set, id=1, indexed=False):
 if __name__ == "__main__":
     eviction_set = get_eviction_set(13, indexed=True)
     for index in eviction_set:
-        print(hex(index))
+        print(index)
+    print("\n\nslice set\n")
+    eviction_set = get_slice_set(18, base_address=0x702000000000, indexed=True, n=20, slice_id=1)
+    for index in eviction_set:
+        print(index)
     # for addr in eviction_set:
     #     print(hex(addr), hex((addr >> 20) ^ 0x7000000))
 
